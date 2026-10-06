@@ -1,18 +1,23 @@
 {
   "expo": {
-    "name": "3d",
+    "name": "RoomScan 3D",
     "slug": "3d",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "3d",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "infoPlist": {
+        "NSCameraUsageDescription": "RoomScan 3D uses the camera to photograph your room for 3D reconstruction.",
+        "NSPhotoLibraryUsageDescription": "RoomScan 3D uses your photo library so you can add existing pictures to a room scan."
+      }
     },
     "android": {
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B0B0C",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,11 +33,26 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0B0B0C",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "RoomScan 3D uses the camera to photograph your room for 3D reconstruction.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "RoomScan 3D uses your photo library so you can add existing pictures to a room scan."
+        }
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
