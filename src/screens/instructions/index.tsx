@@ -14,9 +14,9 @@ import { colors, radius, spacing } from '@/theme';
 
 const STEPS: { title: string; body: string; icon: IconName }[] = [
   { title: 'Good lighting', body: 'Make sure the room is evenly lit.', icon: 'sun' },
-  { title: 'Change position', body: 'Step sideways between photos. Turning in place only makes a flat panorama.', icon: 'walk' },
-  { title: 'Overlap frames', body: 'Keep 40–80% visual overlap between photos.', icon: 'overlap' },
-  { title: 'Capture everything', body: 'Scan walls, furniture, floor and important details.', icon: 'scan' },
+  { title: 'Walk the room', body: 'Move your feet through the room for 60–90 seconds. Turning in place only makes a flat panorama.', icon: 'walk' },
+  { title: 'Overlap the view', body: 'Move slowly so each moment of the video still sees the last part of the room.', icon: 'overlap' },
+  { title: 'Capture everything', body: 'Include walls, furniture, and the floor. The video is split into frames before reconstruction.', icon: 'scan' },
 ];
 
 export function InstructionsScreen() {
@@ -50,7 +50,7 @@ export function InstructionsScreen() {
                 {error}
               </ThemedText>
             ) : null}
-            <AppButton title="Start Scanning" onPress={() => void onStart()} loading={starting} />
+            <AppButton title="Start Recording" onPress={() => void onStart()} loading={starting} />
             <AppButton title="How scanning works" variant="ghost" onPress={() => router.push('/how-it-works')} />
           </View>
         }>
@@ -59,7 +59,7 @@ export function InstructionsScreen() {
             Scan your room
           </ThemedText>
           <ThemedText variant="subhead">
-            Capture overlapping photos around the space for a better 3D reconstruction.
+            Capture a 60–90 second walkthrough. The video becomes frames, then the reconstruction pipeline builds a 3D model.
           </ThemedText>
         </View>
 

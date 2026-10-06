@@ -10,8 +10,9 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "infoPlist": {
-        "NSCameraUsageDescription": "RoomScan 3D uses the camera to photograph your room for 3D reconstruction.",
-        "NSPhotoLibraryUsageDescription": "RoomScan 3D uses your photo library so you can add existing pictures to a room scan."
+        "NSCameraUsageDescription": "RoomScan 3D uses the camera to record a walkthrough of your room for 3D reconstruction.",
+        "NSMicrophoneUsageDescription": "RoomScan 3D records a room walkthrough. The video is saved without audio.",
+        "NSPhotoLibraryUsageDescription": "RoomScan 3D uses your photo library so you can import an existing room video."
       }
     },
     "android": {
@@ -41,15 +42,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "RoomScan 3D uses the camera to photograph your room for 3D reconstruction.",
-          "microphonePermission": false,
+          "cameraPermission": "RoomScan 3D uses the camera to record a walkthrough of your room for 3D reconstruction.",
+          "microphonePermission": "RoomScan 3D records a room walkthrough. The video is saved without audio.",
           "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "RoomScan 3D uses your photo library so you can add existing pictures to a room scan."
+          "photosPermission": "RoomScan 3D uses your photo library so you can import an existing room video."
         }
       ],
       "expo-image"

@@ -2,7 +2,7 @@ import { File, UploadType } from 'expo-file-system';
 
 import { apiBaseUrl } from '@/services/api-config';
 import { ScanServiceError, type ScanService } from '@/services/scan-service';
-import { type Scan, type ScanPatch, type ScanPhoto } from '@/types/scan';
+import { type LocalVideo, type Scan, type ScanPatch, type ScanPhoto } from '@/types/scan';
 
 type CreateResponse = {
   scanId: string;
@@ -62,6 +62,31 @@ export class ApiScanService implements ScanService {
     }
   }
 
+  async uploadVideo(scanId: string, video: LocalVideo, name: string, onProgress: (ratio: number) => void): Promise<void> {
+    const base = apiBaseUrl();
+    const file = new File(video.uri);
+    const task = file.createUploadTask(`${base}/scan/video`, {
+      httpMethod: 'POST',
+      uploadType: UploadType.MULTIPART,
+      fieldName: 'file',
+      mimeType: videoMime(video.filename),
+      parameters: { scanId, name },
+      onProgress: ({ bytesSent, totalBytes }) => {
+        if (totalBytes > 0) onProgress(bytesSent / totalBytes);
+      },
+    });
+    let result;
+    try {
+      result = await task.uploadAsync();
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : '';
+      throw new ScanServiceError(detail || 'The video could not be uploaded. Keep the phone and computer on the same Wi-Fi.');
+    }
+    if (result.status < 200 || result.status >= 300) {
+      throw new ScanServiceError(detailMessage(parseBody(result.body)) ?? `Video upload failed (${result.status}).`);
+    }
+  }
+
   async processScan(scanId: string): Promise<void> {
     await request(`/api/scans/${scanId}/process`, { method: 'POST' });
   }
@@ -93,6 +118,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
+}
+
+function videoMime(filename: string): string {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith('.mov')) return 'video/quicktime';
+  if (lower.endsWith('.m4v')) return 'video/x-m4v';
+  return 'video/mp4';
 }
 
 function parseBody(body: string): unknown {

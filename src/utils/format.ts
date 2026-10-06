@@ -6,6 +6,11 @@ export function displayPhotoCount(scan: Scan): number {
 }
 
 export function photoCountLabel(scan: Scan): string {
+  if (scan.source === 'video') {
+    const count = scan.usableFrameCount || scan.frameCount || 0;
+    if (count <= 0) return scan.durationSeconds ? `${Math.round(scan.durationSeconds)}s video` : 'Video';
+    return `${count} ${count === 1 ? 'frame' : 'frames'}`;
+  }
   const count = displayPhotoCount(scan);
   return `${count} ${count === 1 ? 'photo' : 'photos'}`;
 }

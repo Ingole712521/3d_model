@@ -8,16 +8,20 @@ import { colors, spacing } from '@/theme';
 
 const STEPS = [
   {
-    title: 'Capture',
-    body: 'Walk the room and take overlapping photos. They upload when you create the model.',
+    title: 'Record',
+    body: 'Walk the room for 60–90 seconds. The video uploads with a live progress bar.',
+  },
+  {
+    title: 'Extract',
+    body: 'FFmpeg pulls frames at 3 per second, then blurry and duplicate frames are removed.',
   },
   {
     title: 'Reconstruct',
-    body: 'The backend runs COLMAP on those photos, then Open3D builds a mesh and exports a GLB.',
+    body: 'Those frames go through the existing COLMAP reconstruction, mesh, and GLB export. A GPU can run COLMAP and OpenMVS in Docker.',
   },
   {
     title: 'Explore',
-    body: 'The viewer loads that GLB. Rotate, pinch, and pan the reconstructed room.',
+    body: 'The viewer loads the finished GLB. Rotate, pinch, and pan the reconstructed room.',
   },
 ];
 

@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useScan, useScanStore } from '@/store/scan-store';
 import { colors, spacing } from '@/theme';
 import { formatRemaining, routeParam } from '@/utils/format';
-import { PROCESSING_STAGES, stageLabel, stageVisual } from '@/utils/processing';
+import { stageLabel, stagesFor, stageVisual } from '@/utils/processing';
 
 export function ProcessingScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -91,6 +91,14 @@ export function ProcessingScreen() {
 
   const failed = scan?.status === 'failed' || !!error;
   const progress = scan?.progress ?? 0;
+  const video = scan?.source === 'video';
+  const stages = stagesFor(scan?.source);
+  const frameNote =
+    video && scan?.usableFrameCount
+      ? `${scan.usableFrameCount} frames kept for reconstruction.`
+      : video
+        ? 'Frames are extracted from your walkthrough, then the existing reconstruction pipeline builds the room.'
+        : 'COLMAP is reconstructing this room from your photos. This can take several minutes.';
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -100,7 +108,9 @@ export function ProcessingScreen() {
           <ThemedText variant="largeTitle" accessibilityRole="header">
             Creating your 3D space
           </ThemedText>
-          <ThemedText variant="subhead">We're processing your photos into a 3D model.</ThemedText>
+          <ThemedText variant="subhead">
+            {video ? "We're turning your walkthrough into a 3D model." : "We're processing your photos into a 3D model."}
+          </ThemedText>
         </View>
 
         {failed ? (
@@ -117,21 +127,19 @@ export function ProcessingScreen() {
                 {Math.round(progress)}%
               </ThemedText>
               <ProgressBar value={progress / 100} label={`Reconstruction ${Math.round(progress)} percent`} />
-              <ThemedText variant="headline">{stageLabel(scan?.processingStage)}</ThemedText>
+              <ThemedText variant="headline">{stageLabel(scan?.processingStage, scan?.source)}</ThemedText>
               <ThemedText variant="subhead">{formatRemaining(scan?.estimatedSecondsRemaining)}</ThemedText>
             </View>
             <View style={{ gap: spacing.xs }}>
-              {PROCESSING_STAGES.map((stage) => (
+              {stages.map((stage) => (
                 <ProcessingStep
                   key={stage.id}
                   label={stage.label}
-                  state={stageVisual(scan?.processingStage, stage.id)}
+                  state={stageVisual(scan?.processingStage, stage.id, stages)}
                 />
               ))}
             </View>
-            <ThemedText variant="caption">
-              COLMAP is reconstructing this room from your photos. This can take several minutes.
-            </ThemedText>
+            <ThemedText variant="caption">{frameNote}</ThemedText>
           </View>
         )}
       </Screen>

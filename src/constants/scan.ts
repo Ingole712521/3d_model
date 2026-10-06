@@ -1,6 +1,9 @@
 export const MIN_PHOTOS = 6;
 export const RECOMMENDED_PHOTOS = 12;
 export const MAX_PHOTOS = 30;
+export const MIN_VIDEO_SECONDS = 8;
+export const MAX_RECORD_SECONDS = 90;
+export const MAX_VIDEO_SECONDS = 180;
 
 export function captureTarget(count: number): number {
   if (count < RECOMMENDED_PHOTOS) return RECOMMENDED_PHOTOS;

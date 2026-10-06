@@ -37,7 +37,8 @@ export default function RootLayout() {
           }}>
           <Stack.Screen name="index" options={{ title: 'RoomScan 3D' }} />
           <Stack.Screen name="instructions" options={{ title: 'Scan your room' }} />
-          <Stack.Screen name="camera" options={{ title: 'Scan Room', animation: 'fade' }} />
+          <Stack.Screen name="camera" options={{ title: 'Record Room', animation: 'fade' }} />
+          <Stack.Screen name="upload" options={{ title: 'Uploading video' }} />
           <Stack.Screen name="review" options={{ title: 'Review your scan' }} />
           <Stack.Screen name="processing/[id]" options={{ title: 'Creating your 3D space' }} />
           <Stack.Screen name="viewer/[id]" options={{ title: '3D model' }} />

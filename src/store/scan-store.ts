@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { MAX_PHOTOS } from '@/constants/scan';
 import { scanService } from '@/services';
 import { ScanServiceError } from '@/services/scan-service';
-import { type Scan, type ScanPhoto } from '@/types/scan';
+import { type Scan, type ScanPhoto, type LocalVideo } from '@/types/scan';
 
 type HistoryStatus = 'loading' | 'ready' | 'error';
 
@@ -19,6 +19,8 @@ type ScanState = {
   removePhoto: (photoId: string) => void;
   renameCurrent: (name: string) => void;
   markReviewing: () => void;
+  attachVideo: (video: LocalVideo) => void;
+  submitVideo: () => Promise<Scan>;
   submitCurrent: () => Promise<Scan>;
   ensureProcessing: (scanId: string) => Promise<Scan>;
   refreshScan: (scanId: string) => Promise<Scan>;
@@ -138,6 +140,46 @@ export const useScanStore = create<ScanState>((set, get) => ({
     set({ history: replaceScan(history, { ...scan, status: 'reviewing' }) });
   },
 
+  attachVideo: (video) => {
+    const scan = currentFrom(get());
+    if (!scan) return;
+    const next: Scan = {
+      ...scan,
+      source: 'video',
+      localVideo: video,
+      uploadProgress: 0,
+      status: 'capturing',
+      errorMessage: undefined,
+    };
+    set((state) => ({ history: replaceScan(state.history, next) }));
+  },
+
+  submitVideo: async () => {
+    const scan = currentFrom(get());
+    if (!scan?.localVideo) throw new ScanServiceError('Record a walkthrough before uploading.');
+    const video = scan.localVideo;
+    set((state) => {
+      const current = currentFrom(state);
+      if (!current) return state;
+      return { history: replaceScan(state.history, { ...current, uploadProgress: 0, source: 'video' as const }) };
+    });
+    await scanService.uploadVideo(scan.id, video, scan.name, (ratio) => {
+      const current = get().history.find((item) => item.id === scan.id);
+      if (!current) return;
+      set((state) => ({
+        history: replaceScan(state.history, { ...current, uploadProgress: ratio, source: 'video' }),
+      }));
+    });
+    const status = await scanService.getScanStatus(scan.id);
+    const next = withLocalPhotos(get().history.find((item) => item.id === scan.id), {
+      ...status,
+      source: 'video',
+      uploadProgress: 1,
+    });
+    set((state) => ({ history: replaceScan(state.history, next) }));
+    return next;
+  },
+
   submitCurrent: async () => {
     const scan = currentFrom(get());
     if (!scan) throw new ScanServiceError('This scan could not be found.');
@@ -172,6 +214,7 @@ function withLocalPhotos(local: Scan | undefined, remote: Scan): Scan {
   return {
     ...remote,
     photos: local.photos.length > 0 ? local.photos : remote.photos,
+    localVideo: local.localVideo ?? remote.localVideo,
     thumbnailUrl: remote.thumbnailUrl ?? local.thumbnailUrl,
     photoCount: remote.photoCount > 0 ? remote.photoCount : local.photoCount,
   };
