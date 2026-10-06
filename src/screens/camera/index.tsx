@@ -12,11 +12,12 @@ import { AppButton } from '@/components/app-button';
 import { AppIcon } from '@/components/app-icon';
 import { IconButton } from '@/components/icon-button';
 import { ThemedText } from '@/components/themed-text';
-import { MAX_PHOTOS, captureGuidance, captureTarget } from '@/constants/scan';
+import { MAX_PHOTOS, captureInstruction, captureTarget } from '@/constants/scan';
 import { useCurrentScan, useScanStore } from '@/store/scan-store';
 import { colors, radius, spacing } from '@/theme';
 import { type ScanPhoto } from '@/types/scan';
 import { createId } from '@/utils/id';
+import { deleteCapturedFile, inspectPhoto, readPhotoSample, type PhotoSample } from '@/utils/photo-check';
 import { persistPhoto } from '@/utils/persist-photo';
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -34,12 +35,14 @@ export function CameraScreen() {
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const samples = useRef(new Map<string, PhotoSample>());
   const flashOpacity = useSharedValue(0);
   const flashStyle = useAnimatedStyle(() => ({ opacity: flashOpacity.get() }));
 
   const count = scan?.photos.length ?? 0;
   const target = captureTarget(count);
-  const guidance = captureGuidance(count);
+  const instruction = captureInstruction(count);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
@@ -52,10 +55,23 @@ export function CameraScreen() {
     router.navigate('/review');
   };
 
-  const rememberPhoto = async (uri: string, width: number, height: number) => {
+  const sampleFor = async (uri: string) => {
+    const cached = samples.current.get(uri);
+    if (cached) return cached;
+    try {
+      const sample = await readPhotoSample(uri);
+      samples.current.set(uri, sample);
+      return sample;
+    } catch {
+      return null;
+    }
+  };
+
+  const rememberPhoto = async (uri: string, width: number, height: number, sample: PhotoSample | null) => {
     if (!scan) return false;
     const id = createId('photo');
     const storedUri = await persistPhoto(uri, scan.id, id);
+    if (sample) samples.current.set(storedUri, sample);
     const photo: ScanPhoto = {
       id,
       uri: storedUri,
@@ -64,24 +80,46 @@ export function CameraScreen() {
       filename: `${id}.jpg`,
       createdAt: new Date().toISOString(),
     };
-    return addPhoto(photo);
+    const saved = addPhoto(photo);
+    if (!saved && storedUri !== uri) deleteCapturedFile(storedUri);
+    if (saved && storedUri !== uri) deleteCapturedFile(uri);
+    return saved;
+  };
+
+  const judgePhoto = async (uri: string, previous: PhotoSample | null) => {
+    try {
+      return await inspectPhoto(uri, previous);
+    } catch {
+      return null;
+    }
   };
 
   const takePhoto = async () => {
     if (!cameraRef.current || !ready || takingRef.current || count >= MAX_PHOTOS) return;
     takingRef.current = true;
+    setBusy(true);
     setCaptureError(null);
     flashOpacity.set(withSequence(withTiming(0.85, { duration: 40 }), withTiming(0, { duration: 220, easing: EASE_OUT })));
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const picture = await cameraRef.current.takePictureAsync({ quality: 0.6 });
       if (!picture?.uri) throw new Error('empty');
-      const saved = await rememberPhoto(picture.uri, picture.width, picture.height);
+      const previousUri = scan?.photos[scan.photos.length - 1]?.uri;
+      const previous = previousUri ? await sampleFor(previousUri) : null;
+      const verdict = await judgePhoto(picture.uri, previous);
+      if (verdict && !verdict.ok) {
+        deleteCapturedFile(picture.uri);
+        setCaptureError(verdict.message);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        return;
+      }
+      const saved = await rememberPhoto(picture.uri, picture.width, picture.height, verdict?.ok ? verdict.sample : null);
       if (!saved) setCaptureError('This scan already has the maximum of 30 photos.');
     } catch {
       setCaptureError('Unable to capture this photo. Try again.');
     } finally {
       takingRef.current = false;
+      setBusy(false);
     }
   };
 
@@ -102,10 +140,24 @@ export function CameraScreen() {
         quality: 0.6,
       });
       if (result.canceled) return;
+      const lastPhoto = scan.photos[scan.photos.length - 1];
+      let previous = lastPhoto ? await sampleFor(lastPhoto.uri) : null;
+      let discarded = 0;
+      let reason = '';
       for (const asset of result.assets) {
-        const saved = await rememberPhoto(asset.uri, asset.width, asset.height);
+        const verdict = await judgePhoto(asset.uri, previous);
+        if (verdict && !verdict.ok) {
+          discarded += 1;
+          reason = verdict.message;
+          continue;
+        }
+        const sample = verdict?.ok ? verdict.sample : null;
+        const saved = await rememberPhoto(asset.uri, asset.width, asset.height, sample);
+        if (sample) previous = sample;
         if (!saved) break;
       }
+      if (discarded === 1) setCaptureError(reason);
+      if (discarded > 1) setCaptureError(`${discarded} photos were discarded. ${reason}`);
     } catch {
       setCaptureError('Unable to import these photos. Try again.');
     } finally {
@@ -179,6 +231,22 @@ export function CameraScreen() {
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }}>
           <CornerGuides />
           <Reticle />
+          <View
+            style={{
+              position: 'absolute',
+              left: spacing.md,
+              right: spacing.md,
+              bottom: spacing.md,
+              backgroundColor: colors.overlay,
+              borderRadius: radius.lg,
+              padding: spacing.md,
+              gap: 4,
+            }}>
+            <ThemedText variant="headline">{captureError ? 'Take it again' : busy ? 'Checking photo' : instruction.title}</ThemedText>
+            <ThemedText variant="caption" style={{ color: captureError ? colors.danger : colors.textSecondary }}>
+              {captureError ?? (busy ? 'Hold still while this shot is checked.' : instruction.body)}
+            </ThemedText>
+          </View>
         </View>
         <View
           style={{
@@ -216,14 +284,12 @@ export function CameraScreen() {
       </View>
 
       <View style={{ paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.md, gap: spacing.md, backgroundColor: colors.background }}>
-        <ThemedText variant="subhead" accessibilityLiveRegion="polite" style={{ textAlign: 'center', paddingHorizontal: spacing.lg }}>
-          {guidance}
+        <ThemedText
+          variant="subhead"
+          accessibilityLiveRegion="polite"
+          style={{ textAlign: 'center', paddingHorizontal: spacing.lg, color: captureError ? colors.danger : colors.textSecondary }}>
+          {captureError ?? instruction.body}
         </ThemedText>
-        {captureError ? (
-          <ThemedText variant="caption" selectable style={{ color: colors.danger, textAlign: 'center', paddingHorizontal: spacing.lg }}>
-            {captureError}
-          </ThemedText>
-        ) : null}
         {scan.photos.length > 0 ? (
           <FlatList
             horizontal
@@ -252,7 +318,7 @@ export function CameraScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Capture photo"
-            disabled={!ready || count >= MAX_PHOTOS}
+            disabled={!ready || busy || count >= MAX_PHOTOS}
             onPress={() => void takePhoto()}
             style={({ pressed }) => ({
               width: 76,
@@ -262,7 +328,7 @@ export function CameraScreen() {
               borderColor: colors.shutter,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: !ready || count >= MAX_PHOTOS ? 0.4 : 1,
+              opacity: !ready || busy || count >= MAX_PHOTOS ? 0.4 : 1,
               transform: [{ scale: pressed ? 0.96 : 1 }],
             })}>
             <View style={{ width: 60, height: 60, borderRadius: radius.full, backgroundColor: colors.shutter }} />
@@ -278,7 +344,7 @@ export function CameraScreen() {
         <View style={{ paddingHorizontal: spacing.md, gap: spacing.xs }}>
           <AppButton title="Finish scan" onPress={finish} disabled={count === 0} variant="secondary" />
           <ThemedText variant="caption" style={{ textAlign: 'center' }}>
-            {count >= MAX_PHOTOS ? 'Maximum of 30 photos' : '6 photos minimum · 12 to 20 recommended'}
+            {count >= MAX_PHOTOS ? 'Maximum of 30 photos' : 'Step sideways between shots · 6 minimum'}
           </ThemedText>
         </View>
       </View>

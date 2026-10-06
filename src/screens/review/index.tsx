@@ -14,6 +14,7 @@ import { useCurrentScan, useScanStore } from '@/store/scan-store';
 import { colors, radius, spacing, type as textType } from '@/theme';
 import { type ScanPhoto } from '@/types/scan';
 import { photoCountLabel } from '@/utils/format';
+import { deleteCapturedFile } from '@/utils/photo-check';
 import { scanQuality } from '@/utils/scan-quality';
 
 export function ReviewScreen() {
@@ -63,6 +64,7 @@ export function ReviewScreen() {
   const onDelete = (photo: ScanPhoto) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     removePhoto(photo.id);
+    deleteCapturedFile(photo.uri);
     if (preview?.id === photo.id) setPreview(null);
   };
 

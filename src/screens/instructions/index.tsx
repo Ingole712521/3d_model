@@ -14,7 +14,7 @@ import { colors, radius, spacing } from '@/theme';
 
 const STEPS: { title: string; body: string; icon: IconName }[] = [
   { title: 'Good lighting', body: 'Make sure the room is evenly lit.', icon: 'sun' },
-  { title: 'Move slowly', body: 'Keep the camera steady while moving around the room.', icon: 'walk' },
+  { title: 'Change position', body: 'Step sideways between photos. Turning in place only makes a flat panorama.', icon: 'walk' },
   { title: 'Overlap frames', body: 'Keep 40–80% visual overlap between photos.', icon: 'overlap' },
   { title: 'Capture everything', body: 'Scan walls, furniture, floor and important details.', icon: 'scan' },
 ];
