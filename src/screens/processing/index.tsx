@@ -34,7 +34,7 @@ export function ProcessingScreen() {
         const next = await refreshScan(id);
         if (cancelled) return;
         if (next.status === 'failed') {
-          setError(next.errorMessage ?? "We couldn't create the 3D model.");
+          setError(next.errorMessage ?? "We couldn't create this space.");
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return;
         }
@@ -42,7 +42,10 @@ export function ProcessingScreen() {
           if (!navigated.current) {
             navigated.current = true;
             void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.replace({ pathname: '/viewer/[id]', params: { id: next.id } });
+            router.replace({
+              pathname: next.source === 'video' ? '/tour/[id]' : '/viewer/[id]',
+              params: { id: next.id },
+            });
           }
           return;
         }
@@ -50,7 +53,7 @@ export function ProcessingScreen() {
           void tick();
         }, 400);
       } catch {
-        if (!cancelled) setError("We couldn't create the 3D model.");
+        if (!cancelled) setError("We couldn't create this space.");
       }
     };
 
@@ -59,7 +62,7 @@ export function ProcessingScreen() {
         await ensureProcessing(id);
         if (!cancelled) await tick();
       } catch {
-        if (!cancelled) setError("We couldn't create the 3D model.");
+        if (!cancelled) setError("We couldn't create this space.");
       }
     };
 
@@ -95,9 +98,9 @@ export function ProcessingScreen() {
   const stages = stagesFor(scan?.source);
   const frameNote =
     video && scan?.usableFrameCount
-      ? `${scan.usableFrameCount} frames kept for reconstruction.`
+      ? `${scan.usableFrameCount} frames kept. Keyframes become tour viewpoints.`
       : video
-        ? 'Frames are extracted from your walkthrough, then the existing reconstruction pipeline builds the room.'
+        ? 'Frames are extracted from your walkthrough, then turned into a virtual tour.'
         : 'COLMAP is reconstructing this room from your photos. This can take several minutes.';
 
   return (
@@ -109,13 +112,13 @@ export function ProcessingScreen() {
             Creating your 3D space
           </ThemedText>
           <ThemedText variant="subhead">
-            {video ? "We're turning your walkthrough into a 3D model." : "We're processing your photos into a 3D model."}
+            {video ? "We're turning your walkthrough into a virtual tour." : "We're processing your photos into a 3D model."}
           </ThemedText>
         </View>
 
         {failed ? (
           <EmptyState
-            title="We couldn't create the 3D model."
+            title={video ? "We couldn't create the tour." : "We couldn't create the 3D model."}
             message={scan?.errorMessage ?? error ?? 'Something interrupted reconstruction.'}
             actionLabel="Try Again"
             onAction={() => setAttempt((value) => value + 1)}

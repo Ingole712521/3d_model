@@ -33,9 +33,11 @@ export function ScanInfoScreen() {
           <Detail label="Photos" value={photoCountLabel(scan)} />
           <Detail label="Status" value={statusLabel(scan.status)} />
           <ThemedText variant="caption">
-            {scan.modelUrl
-              ? 'This model was reconstructed from the captured photos.'
-              : 'No reconstructed model is available for this scan.'}
+            {scan.source === 'video'
+              ? 'This walkthrough is a virtual tour built from video frames.'
+              : scan.modelUrl
+                ? 'This model was reconstructed from the captured photos.'
+                : 'No reconstructed model is available for this scan.'}
           </ThemedText>
         </View>
       ) : (

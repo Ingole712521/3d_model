@@ -12,9 +12,9 @@ export const PROCESSING_STAGES: { id: Exclude<ProcessingStage, 'done' | 'extract
 export const VIDEO_PROCESSING_STAGES: { id: Exclude<ProcessingStage, 'done' | 'analyzing' | 'cameras' | 'point-cloud' | 'textures'>; label: string }[] = [
   { id: 'uploading', label: 'Uploading video' },
   { id: 'extracting', label: 'Extracting frames' },
-  { id: 'reconstructing', label: 'Reconstructing' },
-  { id: 'mesh', label: 'Generating mesh' },
-  { id: 'exporting', label: 'Exporting GLB' },
+  { id: 'reconstructing', label: 'Selecting keyframes' },
+  { id: 'mesh', label: 'Generating nodes' },
+  { id: 'exporting', label: 'Building the tour' },
 ];
 
 type StageItem = { id: ProcessingStage; label: string };

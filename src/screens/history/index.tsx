@@ -73,7 +73,7 @@ export function HistoryScreen() {
 
 function openScan(scan: Scan, focusScan: (id: string) => void) {
   if (scan.status === 'completed') {
-    router.push({ pathname: '/viewer/[id]', params: { id: scan.id } });
+    router.push({ pathname: scan.source === 'video' ? '/tour/[id]' : '/viewer/[id]', params: { id: scan.id } });
     return;
   }
   if (scan.status === 'processing' || scan.status === 'failed') {

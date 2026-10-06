@@ -42,6 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="review" options={{ title: 'Review your scan' }} />
           <Stack.Screen name="processing/[id]" options={{ title: 'Creating your 3D space' }} />
           <Stack.Screen name="viewer/[id]" options={{ title: '3D model' }} />
+          <Stack.Screen name="tour/[id]" options={{ title: 'Virtual tour', animation: 'fade' }} />
           <Stack.Screen name="history" options={{ title: 'Your spaces' }} />
           <Stack.Screen
             name="how-it-works"
